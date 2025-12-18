@@ -208,12 +208,17 @@ export const Planet = ({
     const time = clock.getElapsedTime();
     planetMaterial.uniforms.time.value = time;
     
+    // Slow planet rotation on its axis
+    if (meshRef.current) {
+      meshRef.current.rotation.y = time * 0.1;
+    }
+    
     if (glowRef.current && hovered) {
       const scale = 1.3 + Math.sin(time * 3) * 0.1;
       glowRef.current.scale.setScalar(scale);
     }
     if (cloudsRef.current) {
-      cloudsRef.current.rotation.y = time * 0.02;
+      cloudsRef.current.rotation.y = time * 0.05;
     }
   });
 
