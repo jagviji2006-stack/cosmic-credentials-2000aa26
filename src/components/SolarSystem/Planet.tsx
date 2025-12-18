@@ -2,6 +2,7 @@ import { useRef, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { Moon } from './Moon';
 
 // Planet configuration for realistic appearance
 const PLANET_CONFIGS: Record<string, {
@@ -13,6 +14,7 @@ const PLANET_CONFIGS: Record<string, {
   hasStripes?: boolean;
   hasClouds?: boolean;
   surfaceRoughness?: number;
+  moons?: { orbitRadius: number; size: number; color: string; orbitSpeed: number; initialAngle?: number }[];
 }> = {
   'Mercury': {
     baseColor: '#8C7853',
@@ -33,6 +35,9 @@ const PLANET_CONFIGS: Record<string, {
     atmosphereColor: '#87CEEB',
     hasClouds: true,
     surfaceRoughness: 0.5,
+    moons: [
+      { orbitRadius: 1.2, size: 0.15, color: '#C0C0C0', orbitSpeed: 0.8 }
+    ],
   },
   'Mars': {
     baseColor: '#CD5C5C',
@@ -46,6 +51,12 @@ const PLANET_CONFIGS: Record<string, {
     atmosphereColor: '#F4A460',
     hasStripes: true,
     surfaceRoughness: 0.2,
+    moons: [
+      { orbitRadius: 1.5, size: 0.12, color: '#FFE4B5', orbitSpeed: 1.2, initialAngle: 0 },
+      { orbitRadius: 1.8, size: 0.1, color: '#DEB887', orbitSpeed: 0.9, initialAngle: Math.PI / 2 },
+      { orbitRadius: 2.1, size: 0.08, color: '#D2B48C', orbitSpeed: 0.6, initialAngle: Math.PI },
+      { orbitRadius: 2.4, size: 0.14, color: '#F5DEB3', orbitSpeed: 0.4, initialAngle: Math.PI * 1.5 },
+    ],
   },
   'Saturn': {
     baseColor: '#F4D03F',
@@ -55,6 +66,10 @@ const PLANET_CONFIGS: Record<string, {
     ringColor: '#C9B896',
     hasStripes: true,
     surfaceRoughness: 0.2,
+    moons: [
+      { orbitRadius: 2.8, size: 0.18, color: '#FFF8DC', orbitSpeed: 0.5, initialAngle: 0.5 },
+      { orbitRadius: 3.2, size: 0.08, color: '#FFFACD', orbitSpeed: 0.7, initialAngle: 2.5 },
+    ],
   },
   'Uranus': {
     baseColor: '#72CFF8',
@@ -69,6 +84,9 @@ const PLANET_CONFIGS: Record<string, {
     secondaryColor: '#1E3A8A',
     atmosphereColor: '#6495ED',
     surfaceRoughness: 0.3,
+    moons: [
+      { orbitRadius: 1.3, size: 0.1, color: '#E0E0E0', orbitSpeed: 0.6 },
+    ],
   },
 };
 
@@ -309,6 +327,18 @@ export const Planet = ({
           />
         </mesh>
       )}
+
+      {/* Moons */}
+      {config.moons && config.moons.map((moon, index) => (
+        <Moon
+          key={`moon-${index}`}
+          orbitRadius={moon.orbitRadius * size}
+          size={moon.size * size}
+          color={moon.color}
+          orbitSpeed={moon.orbitSpeed}
+          initialAngle={moon.initialAngle}
+        />
+      ))}
 
       {/* Label */}
       {label && (
