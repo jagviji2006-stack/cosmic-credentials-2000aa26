@@ -19,18 +19,24 @@ export type Database = {
           created_at: string
           id: string
           password_hash: string
+          session_expires: string | null
+          session_token: string | null
           username: string
         }
         Insert: {
           created_at?: string
           id?: string
           password_hash: string
+          session_expires?: string | null
+          session_token?: string | null
           username: string
         }
         Update: {
           created_at?: string
           id?: string
           password_hash?: string
+          session_expires?: string | null
+          session_token?: string | null
           username?: string
         }
         Relationships: []

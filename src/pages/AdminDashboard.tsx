@@ -23,9 +23,11 @@ const AdminDashboard = () => {
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
-    // Check auth
-    const isAuth = sessionStorage.getItem('adminAuth');
-    if (!isAuth) {
+    // Check for valid session token
+    const token = sessionStorage.getItem('adminToken');
+    const adminId = sessionStorage.getItem('adminId');
+    
+    if (!token || !adminId) {
       navigate('/admin');
       return;
     }
@@ -35,15 +37,40 @@ const AdminDashboard = () => {
 
   const fetchRegistrations = async () => {
     setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('registrations')
-        .select('*')
-        .order('created_at', { ascending: false });
+    
+    const token = sessionStorage.getItem('adminToken');
+    const adminId = sessionStorage.getItem('adminId');
+    
+    if (!token || !adminId) {
+      navigate('/admin');
+      return;
+    }
 
-      if (error) throw error;
-      setRegistrations(data || []);
+    try {
+      // Fetch registrations via secure Edge Function
+      const { data, error } = await supabase.functions.invoke('admin-registrations', {
+        body: { token, adminId }
+      });
+
+      if (error) {
+        console.error('Fetch error:', error);
+        toast.error('Failed to fetch registrations');
+        handleLogout();
+        return;
+      }
+
+      if (data?.error) {
+        console.error('Auth error:', data.error);
+        toast.error(data.error);
+        if (data.error === 'Session expired' || data.error === 'Invalid session') {
+          handleLogout();
+        }
+        return;
+      }
+
+      setRegistrations(data?.registrations || []);
     } catch (err) {
+      console.error('Fetch error:', err);
       toast.error('Failed to fetch registrations');
     } finally {
       setIsLoading(false);
@@ -83,7 +110,8 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem('adminAuth');
+    sessionStorage.removeItem('adminToken');
+    sessionStorage.removeItem('adminId');
     navigate('/admin');
   };
 
