@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Lock, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -14,16 +15,51 @@ const Admin = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simple admin check (in production, use proper auth)
-    if (username === 'admin' && password === 'admin123') {
-      sessionStorage.setItem('adminAuth', 'true');
-      toast.success('Welcome, Administrator!');
-      navigate('/admin/dashboard');
-    } else {
-      toast.error('Invalid credentials');
+    try {
+      // Validate input
+      if (!username.trim() || !password.trim()) {
+        toast.error('Please enter username and password');
+        setIsLoading(false);
+        return;
+      }
+
+      // Server-side authentication via Edge Function
+      const { data, error } = await supabase.functions.invoke('admin-auth', {
+        body: { 
+          username: username.trim(), 
+          password: password.trim(),
+          action: 'login'
+        }
+      });
+
+      if (error) {
+        console.error('Auth error:', error);
+        toast.error('Authentication failed');
+        setIsLoading(false);
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
+        setIsLoading(false);
+        return;
+      }
+
+      if (data?.success && data?.token) {
+        // Store secure session token
+        sessionStorage.setItem('adminToken', data.token);
+        sessionStorage.setItem('adminId', data.adminId);
+        toast.success('Welcome, Administrator!');
+        navigate('/admin/dashboard');
+      } else {
+        toast.error('Invalid credentials');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      toast.error('Authentication failed');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (
@@ -79,6 +115,7 @@ const Admin = () => {
                   placeholder="Enter username"
                   className="input-cosmic pl-11"
                   required
+                  maxLength={50}
                 />
               </div>
             </div>
@@ -96,6 +133,7 @@ const Admin = () => {
                   placeholder="Enter password"
                   className="input-cosmic pl-11"
                   required
+                  maxLength={100}
                 />
               </div>
             </div>
@@ -108,10 +146,6 @@ const Admin = () => {
               {isLoading ? 'Authenticating...' : 'Access Control Center'}
             </button>
           </form>
-
-          <p className="text-center text-muted-foreground text-xs mt-6">
-            Default: admin / admin123
-          </p>
         </motion.div>
       </div>
     </div>
